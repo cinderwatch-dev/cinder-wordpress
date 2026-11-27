@@ -1,0 +1,10 @@
+.idea
+.phpunit.result.cache
+.phpunit.cache
+composer.lock
+coverage
+phpunit.xml
+phpstan.neon
+vendor
+vendor-prefixed
+build

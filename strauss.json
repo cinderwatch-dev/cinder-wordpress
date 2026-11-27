@@ -1,0 +1,16 @@
+{
+    "target_directory": "vendor-prefixed",
+    "namespace_prefix": "Cinderwatch\\WordPress\\Vendor\\",
+    "classmap_prefix": "Cinderwatch_WordPress_Vendor_",
+    "packages": [
+        "cinderwatch/cinder-php",
+        "nyholm/psr7",
+        "php-http/discovery",
+        "psr/http-client",
+        "psr/http-factory",
+        "psr/http-message"
+    ],
+    "update_call_sites": false,
+    "delete_vendor_packages": true,
+    "delete_vendor_directories": true
+}

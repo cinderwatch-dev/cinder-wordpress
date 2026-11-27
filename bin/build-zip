@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MONOREPO="$(cd "${ROOT}/../.." && pwd)"
+BUILD="${ROOT}/build/cinder"
+ZIP="${ROOT}/build/cinder.zip"
+
+rm -rf "${ROOT}/build"
+mkdir -p "${BUILD}/packages"
+
+rsync -a \
+  --exclude 'build' \
+  --exclude 'vendor' \
+  --exclude 'vendor_prefixed' \
+  --exclude '.phpunit.cache' \
+  --exclude 'tests' \
+  --exclude '.github' \
+  --exclude '.editorconfig' \
+  --exclude '.gitattributes' \
+  --exclude '.gitignore' \
+  --exclude 'CHANGELOG.md' \
+  --exclude 'phpunit.xml.dist' \
+  --exclude 'phpstan.neon.dist' \
+  "${ROOT}/" "${BUILD}/"
+
+rsync -a \
+  --exclude 'vendor' \
+  --exclude 'tests' \
+  --exclude '.phpunit.cache' \
+  --exclude '.github' \
+  --exclude '.editorconfig' \
+  --exclude '.gitattributes' \
+  --exclude '.gitignore' \
+  --exclude 'CHANGELOG.md' \
+  --exclude 'phpunit.xml.dist' \
+  --exclude 'phpstan.neon.dist' \
+  "${MONOREPO}/packages/cinder-php/" "${BUILD}/packages/cinder-php/"
+
+php "${ROOT}/bin/prepare-build-composer.php" "${BUILD}/composer.json"
+
+VERSION="${CINDER_PLUGIN_VERSION:-}"
+if [[ -z "${VERSION}" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+  VERSION="${GITHUB_REF_NAME#v}"
+fi
+if [[ -n "${VERSION}" ]]; then
+  sed -i.bak -E "s/^( \* Version:[[:space:]]+).*/\1${VERSION}/" "${BUILD}/cinder.php"
+  rm -f "${BUILD}/cinder.php.bak"
+fi
+
+cd "${BUILD}"
+composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+composer require --dev brianhenryie/strauss:^0.25 --no-interaction --no-progress
+
+if [[ -x vendor/bin/strauss ]]; then
+  vendor/bin/strauss
+  rm -rf vendor/cinderwatch vendor/nyholm vendor/php-http vendor/psr
+
+fi
+
+rm -rf vendor/brianhenryie
+composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+cd "${ROOT}/build"
+rm -f "${ZIP}"
+zip -rq "${ZIP}" cinder
+
+echo "Built ${ZIP}"
